@@ -12,37 +12,15 @@
 #define PORT 8080
 #define SA struct sockaddr
 
-void func(int sockfd)
-{
-    char buff[MAX];
-    int n;
-    for (;;) {
-        bzero(buff, sizeof(buff));
-        printf("\t\t To server : ");
-        n = 0;
-        while ((buff[n++] = getchar()) != '\n');
+int reconnect(int *sockfd, int *connfd){
 
-        write(sockfd, buff, sizeof(buff));
-        bzero(buff, sizeof(buff));
-        read(sockfd, buff, sizeof(buff));
-        printf("From Server : %s", buff);
-        if ((strncmp(buff, "exit", 4)) == 0) {
-            printf("Client Exit...\n");
-            break;
-        }
-    }
-}
-
-int main()
-{
-    int sockfd, connfd;
     struct sockaddr_in servaddr, cli;
-
     // socket create and varification
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
+    close(*sockfd);
+    *sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (*sockfd == -1) {
         printf("socket creation failed...\n");
-        exit(0);
+        return -1;
     }
     else
         printf("Socket successfully created..\n");
@@ -54,16 +32,53 @@ int main()
     servaddr.sin_port = htons(PORT);
 
     // connect the client socket to server socket
-    if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
+    if (connect(*sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
         printf("connection with the server failed...\n");
-        exit(0);
+        return -1;
     }
     else
         printf("connected to the server..\n");
 
-    // function for chat
-    func(sockfd);
+    return 0;
+}
+
+int func(int sockfd)
+{
+    char buff[MAX];
+    int n;
+    for (;;) {
+        bzero(buff, sizeof(buff));
+        printf("\t\t To server : ");
+        n = 0;
+        while ((buff[n++] = getchar()) != '\n');
+
+        ssize_t tmp = write(sockfd, buff, sizeof(buff));
+        printf("write size: %zd\n",sockfd);
+
+        if ((strncmp(buff, "exit", 4)) == 0) {
+            printf("Client Exit...\n");
+            break;
+        }
+    }
+    return 0;
+}
+
+int main()
+{
+    int sockfd, connfd;
+    while (1) {
+        while (reconnect(&sockfd, &connfd) != 0);
+
+        // function for chat
+        if (func(sockfd)==0){
+            break;
+        }
+    }
 
     // close the socket
     close(sockfd);
 }
+
+/*REFERENCES:
+ * Main code inspiration: https://www.geeksforgeeks.org/tcp-server-client-implementation-in-c/
+ */
