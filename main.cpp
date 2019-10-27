@@ -47,13 +47,17 @@ int func(int sockfd)
     char buff[MAX];
     int n;
     for (;;) {
+        if (sockfd<=0){
+            printf("Client Exit...\n");
+            break;
+        }
         bzero(buff, sizeof(buff));
         printf("\t\t To server : ");
         n = 0;
         while ((buff[n++] = getchar()) != '\n');
 
         ssize_t tmp = write(sockfd, buff, sizeof(buff));
-        printf("write size: %zd\n",sockfd);
+        printf("write size: %d\n",sockfd);
 
         if ((strncmp(buff, "exit", 4)) == 0) {
             printf("Client Exit...\n");
